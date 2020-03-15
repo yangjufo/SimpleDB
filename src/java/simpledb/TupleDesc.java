@@ -96,11 +96,10 @@ public class TupleDesc implements Serializable {
      * @throws NoSuchElementException if i is not a valid field reference.
      */
     public String getFieldName(final int i) throws NoSuchElementException {
-        try {
-            return items.get(i).fieldName;
-        } catch (final Exception e) {
+        if (i > numFields()) {
             throw new NoSuchElementException();
         }
+        return items.get(i).fieldName;
     }
 
     /**
@@ -112,11 +111,10 @@ public class TupleDesc implements Serializable {
      * @throws NoSuchElementException if i is not a valid field reference.
      */
     public Type getFieldType(final int i) throws NoSuchElementException {
-        try {
-            return items.get(i).fieldType;
-        } catch (final Exception e) {
+        if (i > numFields()) {
             throw new NoSuchElementException();
         }
+        return items.get(i).fieldType;
     }
 
     /**
