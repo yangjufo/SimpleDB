@@ -25,7 +25,7 @@ public class Tuple implements Serializable {
      */
     public Tuple(final TupleDesc td) {
         this.td = td;
-        fields = new LinkedList<>(Collections.nCopies(td.numFields(), null));
+        fields = new ArrayList<>(Collections.nCopies(td.numFields(), null));
         rid = null;
     }
 
