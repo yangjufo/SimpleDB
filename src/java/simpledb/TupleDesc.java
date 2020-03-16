@@ -60,7 +60,6 @@ public class TupleDesc implements Serializable {
      *                be null.
      */
     public TupleDesc(final Type[] typeAr, final String[] fieldAr) {
-        // some code goes here
         for (int i = 0; i < typeAr.length; i++) {
             items.add(new TDItem(typeAr[i], fieldAr[i]));
             size += typeAr[i].getLen();
