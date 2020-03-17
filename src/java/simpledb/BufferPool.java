@@ -74,10 +74,14 @@ public class BufferPool {
      * @param perm the requested permissions on the page
      */
     public Page getPage(TransactionId tid, PageId pid, Permissions perm) throws TransactionAbortedException, DbException {
-        if (pageIdMap.containsKey(pid)) {
-            return pageIdMap.get(pid);
+        if (pageIdMap.size() == numPages) {
+            throw new DbException("No free pages");
         }
-        throw new DbException("No free pages");
+        if (!pageIdMap.containsKey(pid)) {
+            pageIdMap.put(pid, Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
+        }
+        return pageIdMap.get(pid);
+
     }
 
     /**

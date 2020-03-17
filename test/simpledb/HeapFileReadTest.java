@@ -1,15 +1,13 @@
 package simpledb;
 
+import junit.framework.JUnit4TestAdapter;
+import org.junit.*;
 import simpledb.systemtest.SimpleDbTestBase;
 import simpledb.systemtest.SystemTestUtil;
 
-import java.util.*;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import java.util.NoSuchElementException;
 
 import static org.junit.Assert.*;
-import junit.framework.JUnit4TestAdapter;
 
 public class HeapFileReadTest extends SimpleDbTestBase {
     private HeapFile hf;
@@ -88,7 +86,7 @@ public class HeapFileReadTest extends SimpleDbTestBase {
         try {
             it.next();
             fail("expected exception");
-        } catch (NoSuchElementException e) {
+        } catch (NoSuchElementException ignored) {
         }
 
         it.open();
@@ -115,7 +113,7 @@ public class HeapFileReadTest extends SimpleDbTestBase {
         try {
             it.next();
             fail("expected exception");
-        } catch (NoSuchElementException e) {
+        } catch (NoSuchElementException ignored) {
         }
         // close twice is harmless
         it.close();

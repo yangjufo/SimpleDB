@@ -1,9 +1,8 @@
 package simpledb;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Each instance of HeapPage stores data for one page of HeapFiles and
@@ -23,18 +22,13 @@ public class HeapPage implements Page {
     byte[] oldData;
     private final Byte oldDataLock = (byte) 0;
 
-    private static final Map<Integer, Integer> bitsMap = new HashMap<>() {
-        {
-            put(0, 0);
-            put(1, 1);
-            put(2, 1);
-            put(3, 2);
-            put(4, 1);
-            put(5, 1);
-            put(6, 2);
-            put(7, 3);
+    private static final int[] bitsMap = new int[256];
+
+    static {
+        for (int i = 1; i < 256; ++i) {
+            bitsMap[i] = bitsMap[i >> 1] + (i & 1); // x / 2 is x >> 1 and x % 2 is x & 1
         }
-    };
+    }
 
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
@@ -61,7 +55,7 @@ public class HeapPage implements Page {
 
         // allocate and read the header slots of this page
         header = new byte[getHeaderSize()];
-        for (int i = 0; i < header.length; i++) {
+        for (int i = 0; i < header.length - 1; i++) {
             header[i] = dis.readByte();
         }
 
@@ -296,14 +290,18 @@ public class HeapPage implements Page {
      * Returns the number of empty slots on this page.
      */
     public int getNumEmptySlots() {
-        return Stream.of(header).mapToInt(h -> bitsMap.get(ByteBuffer.wrap(h).getInt())).sum();
+        int count = 0;
+        for (Byte head : header) {
+            count += bitsMap[head & 0xFF];
+        }
+        return numSlots - count;
     }
 
     /**
      * Returns true if associated slot on this page is filled.
      */
     public boolean isSlotUsed(int i) {
-        return (header[header.length - 1 - i / 8] >> (i % 8) & 1) == 1;
+        return (header[i / 8] >> (i % 8) & 1) == 1;
     }
 
     /**
@@ -324,10 +322,10 @@ public class HeapPage implements Page {
 
             @Override
             public boolean hasNext() {
-                while (!isSlotUsed(index)) {
+                while (index < numSlots && !isSlotUsed(index)) {
                     index += 1;
                 }
-                return index < tuples.length;
+                return index < numSlots;
             }
 
             @Override
