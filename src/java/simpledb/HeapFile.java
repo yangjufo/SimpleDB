@@ -158,6 +158,7 @@ public class HeapFile implements DbFile {
                 try {
                     pgNo = 0;
                     page = (HeapPage) Database.getBufferPool().getPage(tid, new HeapPageId(getId(), pgNo), Permissions.READ_ONLY);
+                    pageIterator = page.iterator();
                 } catch (TransactionAbortedException e) {
                     throw e;
                 } catch (Exception e) {

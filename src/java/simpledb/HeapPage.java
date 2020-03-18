@@ -55,7 +55,7 @@ public class HeapPage implements Page {
 
         // allocate and read the header slots of this page
         header = new byte[getHeaderSize()];
-        for (int i = 0; i < header.length - 1; i++) {
+        for (int i = 0; i < header.length; i++) {
             header[i] = dis.readByte();
         }
 
@@ -88,7 +88,7 @@ public class HeapPage implements Page {
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
     private int getHeaderSize() {
-        return BufferPool.getPageSize() - td.getSize() * getNumTuples();
+        return (int) Math.ceil(getNumTuples() / 8.0);
     }
 
     /**

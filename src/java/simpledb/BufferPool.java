@@ -24,9 +24,7 @@ public class BufferPool {
     private static int pageSize = DEFAULT_PAGE_SIZE;
 
     private int numPages;
-    private Map<PageId, Page> pageIdMap = new HashMap<>();
-    private Map<PageId, TransactionId> pageTransIdMap = new HashMap<>();
-    private Map<PageId, String> pageIdStatusMap = new HashMap<>();
+    private Map<Integer, Page> pageIdMap = new HashMap<>();
 
     /**
      * Default number of pages passed to the constructor. This is used by
@@ -77,10 +75,11 @@ public class BufferPool {
         if (pageIdMap.size() == numPages) {
             throw new DbException("No free pages");
         }
-        if (!pageIdMap.containsKey(pid)) {
-            pageIdMap.put(pid, Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
+        int pidKey = pid.hashCode();
+        if (!pageIdMap.containsKey(pidKey)) {
+            pageIdMap.put(pidKey, Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
         }
-        return pageIdMap.get(pid);
+        return pageIdMap.get(pidKey);
 
     }
 
