@@ -317,7 +317,7 @@ public class HeapPage implements Page {
      * (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
-        return new Iterator<>() {
+        return new Iterator<Tuple>() {
             private int index = 0;
 
             @Override
