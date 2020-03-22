@@ -1,6 +1,7 @@
 package simpledb;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Knows how to compute some aggregate over a set of IntFields.
@@ -12,9 +13,9 @@ public class IntegerAggregator implements Aggregator {
     private final int groupByField;
     private final int aggregateField;
     private final Op aggregateOperator;
-    private int aggregatedCount;
     private final TupleDesc aggregatedTupleDesc;
     private final Map<Field, Tuple> aggregatedTuples = new HashMap<>();
+    private final Map<Field, Integer> aggregatedCounts = new HashMap<>();
 
     /**
      * Aggregate constructor
@@ -31,7 +32,6 @@ public class IntegerAggregator implements Aggregator {
         groupByField = gbfield;
         aggregateField = afield;
         aggregateOperator = what;
-        aggregatedCount = 0;
         if (groupByField == NO_GROUPING) {
             aggregatedTupleDesc = new TupleDesc(new Type[]{Type.INT_TYPE});
         } else {
@@ -45,11 +45,13 @@ public class IntegerAggregator implements Aggregator {
      *
      * @param tup the Tuple containing an aggregate field and a group-by field
      */
+    @SuppressWarnings("DuplicatedCode")
     public void mergeTupleIntoGroup(final Tuple tup) {
         final Tuple mergedTuple = aggregatedTuples.getOrDefault(groupByField == NO_GROUPING ? null : tup.getField(groupByField),
                 new Tuple(aggregatedTupleDesc));
         IntField aggregatedValue = (IntField) (groupByField == NO_GROUPING ? mergedTuple.getField(0) : mergedTuple.getField(1));
         final IntField newValue = (IntField) tup.getField(aggregateField);
+        final int currCount = aggregatedCounts.getOrDefault(groupByField == NO_GROUPING ? null : tup.getField(groupByField), 0);
         switch (aggregateOperator) {
             case MIN:
                 aggregatedValue = aggregatedValue == null ? newValue : aggregatedValue.compare(Predicate.Op.LESS_THAN, newValue) ? aggregatedValue : newValue;
@@ -60,13 +62,13 @@ public class IntegerAggregator implements Aggregator {
                 break;
             case AVG:
                 aggregatedValue = aggregatedValue == null ? newValue : new IntField(
-                        (aggregatedValue.getValue() * aggregatedCount + newValue.getValue()) / (aggregatedCount + 1));
+                        (aggregatedValue.getValue() * currCount + newValue.getValue()) / (currCount + 1));
                 break;
             case SUM:
                 aggregatedValue = aggregatedValue == null ? newValue : new IntField(aggregatedValue.getValue() + newValue.getValue());
                 break;
             case COUNT:
-                aggregatedValue = aggregatedValue == null ? new IntField(1) : new IntField(aggregatedCount + 1);
+                aggregatedValue = new IntField(currCount + 1);
                 break;
             case SC_AVG:
             case SUM_COUNT:
@@ -77,7 +79,7 @@ public class IntegerAggregator implements Aggregator {
             mergedTuple.setField(0, tup.getField(groupByField));
         }
         aggregatedTuples.put(groupByField == NO_GROUPING ? null : tup.getField(groupByField), mergedTuple);
-        aggregatedCount += 1;
+        aggregatedCounts.put(groupByField == NO_GROUPING ? null : tup.getField(groupByField), currCount + 1);
     }
 
     /**
@@ -89,41 +91,7 @@ public class IntegerAggregator implements Aggregator {
      * the constructor.
      */
     public OpIterator iterator() {
-        return new OpIterator() {
-            Iterator<Tuple> aggregatedIterator;
-
-            @Override
-            public void open() throws DbException, TransactionAbortedException {
-                aggregatedIterator = aggregatedTuples.values().iterator();
-
-            }
-
-            @Override
-            public boolean hasNext() throws DbException, TransactionAbortedException {
-                return aggregatedIterator.hasNext();
-            }
-
-            @Override
-            public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
-                return aggregatedIterator.next();
-            }
-
-            @Override
-            public void rewind() throws DbException, TransactionAbortedException {
-                close();
-                open();
-            }
-
-            @Override
-            public TupleDesc getTupleDesc() {
-                return aggregatedTupleDesc;
-            }
-
-            @Override
-            public void close() {
-                aggregatedIterator = null;
-            }
-        };
+        return new TupleIterator(aggregatedTupleDesc, aggregatedTuples.values());
     }
 
 }
