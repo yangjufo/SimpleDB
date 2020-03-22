@@ -1,7 +1,6 @@
 package simpledb;
 
-import java.util.ArrayList;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * The Join operator implements the relational join operation.
@@ -13,6 +12,8 @@ public class Join extends Operator {
     private JoinPredicate joinPredicate;
     private OpIterator opIterator1, opIterator2;
     private ArrayList<OpIterator> children = new ArrayList<>();
+    private boolean tuple2Done;
+    private Tuple tuple1;
 
     /**
      * Constructor. Accepts two children to join and the predicate to join them
@@ -39,7 +40,7 @@ public class Join extends Operator {
      * alias or table name.
      */
     public String getJoinField1Name() {
-        return null;
+        return opIterator1.getTupleDesc().getFieldName(joinPredicate.getField1());
     }
 
     /**
@@ -47,8 +48,7 @@ public class Join extends Operator {
      * alias or table name.
      */
     public String getJoinField2Name() {
-        // some code goes here
-        return null;
+        return opIterator2.getTupleDesc().getFieldName(joinPredicate.getField2());
     }
 
     /**
@@ -56,20 +56,27 @@ public class Join extends Operator {
      * implementation logic.
      */
     public TupleDesc getTupleDesc() {
-        return null;
+        return TupleDesc.merge(opIterator1.getTupleDesc(), opIterator2.getTupleDesc());
     }
 
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
-        // some code goes here
+        super.open();
+        opIterator1.open();
+        opIterator2.open();
+        tuple2Done = true;
+        tuple1 = null;
     }
 
     public void close() {
-        // some code goes here
+        super.close();
+        opIterator1.close();
+        opIterator2.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+        close();
+        open();
     }
 
     /**
@@ -91,19 +98,43 @@ public class Join extends Operator {
      * @see JoinPredicate#filter
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        // some code goes here
+        final Tuple mergedTuple = new Tuple(getTupleDesc());
+        while (opIterator1.hasNext() || !tuple2Done) {
+            if (tuple2Done) {
+                tuple1 = opIterator1.next();
+            }
+            tuple2Done = false;
+            while (opIterator2.hasNext()) {
+                final Tuple tuple2 = opIterator2.next();
+                if (joinPredicate.filter(tuple1, tuple2)) {
+                    int index = 0;
+                    final Iterator<Field> fields1 = tuple1.fields();
+                    while (fields1.hasNext()) {
+                        mergedTuple.setField(index, fields1.next());
+                        index += 1;
+                    }
+                    final Iterator<Field> fields2 = tuple2.fields();
+                    while (fields2.hasNext()) {
+                        mergedTuple.setField(index, fields2.next());
+                        index += 1;
+                    }
+                    return mergedTuple;
+                }
+            }
+            tuple2Done = true;
+            opIterator2.rewind();
+        }
         return null;
     }
 
     @Override
     public OpIterator[] getChildren() {
-        // some code goes here
-        return null;
+        return children.toArray(OpIterator[]::new);
     }
 
     @Override
-    public void setChildren(OpIterator[] children) {
-        // some code goes here
+    public void setChildren(final OpIterator[] children) {
+        this.children = (ArrayList<OpIterator>) Arrays.asList(children);
     }
 
 }

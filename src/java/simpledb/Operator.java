@@ -28,7 +28,7 @@ public abstract class Operator implements OpIterator {
                 throw new NoSuchElementException();
         }
 
-        Tuple result = next;
+        final Tuple result = next;
         next = null;
         return result;
     }

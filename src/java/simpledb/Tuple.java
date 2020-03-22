@@ -13,8 +13,8 @@ public class Tuple implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private TupleDesc td;
-    private RecordId rid;
+    private TupleDesc tupleDesc;
+    private RecordId recordId;
     private final List<Field> fields;
 
     /**
@@ -24,16 +24,16 @@ public class Tuple implements Serializable {
      *           instance with at least one field.
      */
     public Tuple(final TupleDesc td) {
-        this.td = td;
+        this.tupleDesc = td;
         fields = new ArrayList<>(Collections.nCopies(td.numFields(), null));
-        rid = null;
+        recordId = null;
     }
 
     /**
      * @return The TupleDesc representing the schema of this tuple.
      */
     public TupleDesc getTupleDesc() {
-        return td;
+        return tupleDesc;
     }
 
     /**
@@ -41,7 +41,7 @@ public class Tuple implements Serializable {
      * be null.
      */
     public RecordId getRecordId() {
-        return rid;
+        return recordId;
     }
 
     /**
@@ -50,7 +50,7 @@ public class Tuple implements Serializable {
      * @param rid the new RecordId for this tuple.
      */
     public void setRecordId(final RecordId rid) {
-        this.rid = rid;
+        this.recordId = rid;
     }
 
     /**
@@ -94,6 +94,6 @@ public class Tuple implements Serializable {
      * reset the TupleDesc of this tuple (only affecting the TupleDesc)
      */
     public void resetTupleDesc(final TupleDesc td) {
-        this.td = td;
+        this.tupleDesc = td;
     }
 }

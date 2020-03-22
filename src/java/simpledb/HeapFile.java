@@ -150,8 +150,8 @@ public class HeapFile implements DbFile {
 
             @Override
             public void rewind() throws DbException, TransactionAbortedException {
-                heapPage = null;
-                pageNumber = -1;
+                close();
+                open();
             }
 
             @Override
@@ -159,6 +159,7 @@ public class HeapFile implements DbFile {
                 open = false;
                 heapPage = null;
                 pageIterator = null;
+                pageNumber = -1;
             }
         };
     }

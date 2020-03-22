@@ -291,7 +291,7 @@ public class HeapPage implements Page {
      */
     public int getNumEmptySlots() {
         int count = 0;
-        for (Byte head : header) {
+        for (final Byte head : header) {
             count += bitsMap[head & 0xFF];
         }
         return numSlots - count;
