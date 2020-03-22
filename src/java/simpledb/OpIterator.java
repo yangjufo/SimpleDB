@@ -15,14 +15,14 @@ public interface OpIterator extends Serializable{
    * Opens the iterator. This must be called before any of the other methods.
    * @throws DbException when there are problems opening/accessing the database.
    */
-  public void open()
+  void open()
       throws DbException, TransactionAbortedException;
 
   /** Returns true if the iterator has more tuples.
    * @return true f the iterator has more tuples.
    * @throws IllegalStateException If the iterator has not been opened
  */
-  public boolean hasNext() throws DbException, TransactionAbortedException;
+  boolean hasNext() throws DbException, TransactionAbortedException;
 
   /**
    * Returns the next tuple from the operator (typically implementing by reading
@@ -32,25 +32,25 @@ public interface OpIterator extends Serializable{
    * @throws NoSuchElementException if there are no more tuples.
    * @throws IllegalStateException If the iterator has not been opened
    */
-  public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException;
+  Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException;
 
   /**
    * Resets the iterator to the start.
    * @throws DbException when rewind is unsupported.
    * @throws IllegalStateException If the iterator has not been opened
    */
-  public void rewind() throws DbException, TransactionAbortedException;
+  void rewind() throws DbException, TransactionAbortedException;
 
   /**
    * Returns the TupleDesc associated with this OpIterator.
    * @return the TupleDesc associated with this OpIterator.
    */
-  public TupleDesc getTupleDesc();
+  TupleDesc getTupleDesc();
 
   /**
    * Closes the iterator. When the iterator is closed, calling next(),
    * hasNext(), or rewind() should fail by throwing IllegalStateException.
    */
-  public void close();
+  void close();
 
 }

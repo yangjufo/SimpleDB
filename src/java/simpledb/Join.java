@@ -9,8 +9,9 @@ public class Join extends Operator {
 
     private static final long serialVersionUID = 1L;
 
-    private JoinPredicate joinPredicate;
-    private OpIterator opIterator1, opIterator2;
+    private final JoinPredicate joinPredicate;
+    private final OpIterator opIterator1;
+    private final OpIterator opIterator2;
     private ArrayList<OpIterator> children = new ArrayList<>();
     private boolean tuple2Done;
     private Tuple tuple1;
