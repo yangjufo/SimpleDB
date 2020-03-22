@@ -1,8 +1,8 @@
 
 package simpledb;
 
-import java.util.*;
-import java.io.*;
+import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * The interface for database files on disk. Each table is represented by a
@@ -17,16 +17,15 @@ public interface DbFile {
      *
      * @throws IllegalArgumentException if the page does not exist in this file.
      */
-    public Page readPage(PageId id);
+    Page readPage(PageId id);
 
     /**
      * Push the specified page to disk.
      *
      * @param p The page to write.  page.getId().pageno() specifies the offset into the file where the page should be written.
      * @throws IOException if the write fails
-     *
      */
-    public void writePage(Page p) throws IOException;
+    void writePage(Page p) throws IOException;
 
     /**
      * Inserts the specified tuple to the file on behalf of transaction.
@@ -34,14 +33,14 @@ public interface DbFile {
      * may block until the lock can be acquired.
      *
      * @param tid The transaction performing the update
-     * @param t The tuple to add.  This tuple should be updated to reflect that
-     *          it is now stored in this file.
+     * @param t   The tuple to add.  This tuple should be updated to reflect that
+     *            it is now stored in this file.
      * @return An ArrayList contain the pages that were modified
      * @throws DbException if the tuple cannot be added
      * @throws IOException if the needed file can't be read/written
      */
-    public ArrayList<Page> insertTuple(TransactionId tid, Tuple t)
-        throws DbException, IOException, TransactionAbortedException;
+    ArrayList<Page> insertTuple(TransactionId tid, Tuple t)
+            throws DbException, IOException, TransactionAbortedException;
 
     /**
      * Removes the specified tuple from the file on behalf of the specified
@@ -50,14 +49,14 @@ public interface DbFile {
      * may block until the lock can be acquired.
      *
      * @param tid The transaction performing the update
-     * @param t The tuple to delete.  This tuple should be updated to reflect that
-     *          it is no longer stored on any page.
+     * @param t   The tuple to delete.  This tuple should be updated to reflect that
+     *            it is no longer stored on any page.
      * @return An ArrayList contain the pages that were modified
      * @throws DbException if the tuple cannot be deleted or is not a member
-     *   of the file
+     *                     of the file
      */
-    public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t)
-        throws DbException, IOException, TransactionAbortedException;
+    ArrayList<Page> deleteTuple(TransactionId tid, Tuple t)
+            throws DbException, IOException, TransactionAbortedException;
 
     /**
      * Returns an iterator over all the tuples stored in this DbFile. The
@@ -66,7 +65,7 @@ public interface DbFile {
      *
      * @return an iterator over all the tuples stored in this DbFile.
      */
-    public DbFileIterator iterator(TransactionId tid);
+    DbFileIterator iterator(TransactionId tid);
 
     /**
      * Returns a unique ID used to identify this DbFile in the Catalog. This id
@@ -81,11 +80,12 @@ public interface DbFile {
      *
      * @return an ID uniquely identifying this HeapFile.
      */
-    public int getId();
-    
+    int getId();
+
     /**
      * Returns the TupleDesc of the table stored in this DbFile.
+     *
      * @return TupleDesc of this DbFile.
      */
-    public TupleDesc getTupleDesc();
+    TupleDesc getTupleDesc();
 }

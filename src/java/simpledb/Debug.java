@@ -15,7 +15,7 @@ package simpledb;
 public class Debug {
   private static final int DEBUG_LEVEL;
   static {
-      String debug = System.getProperty("simpledb.Debug");
+      final String debug = System.getProperty("simpledb.Debug");
       if (debug == null) {
           // No system property = disabled
           DEBUG_LEVEL = -1;
@@ -30,7 +30,7 @@ public class Debug {
   private static final int DEFAULT_LEVEL = 0;
 
   /** Log message if the log level >= level. Uses printf. */
-  public static void log(int level, String message, Object... args) {
+  public static void log(final int level, final String message, final Object... args) {
     if (isEnabled(level)) {
       System.out.printf(message, args);
       System.out.println();
@@ -38,7 +38,7 @@ public class Debug {
   }
 
   /** @return true if level is being logged. */
-  public static boolean isEnabled(int level) {
+  public static boolean isEnabled(final int level) {
     return level <= DEBUG_LEVEL;
   }
 
@@ -48,7 +48,7 @@ public class Debug {
   }
 
   /** Logs message at the default log level. */
-  public static void log(String message, Object... args) {
+  public static void log(final String message, final Object... args) {
     log(DEFAULT_LEVEL, message, args);
   }
 }

@@ -1,6 +1,7 @@
 package simpledb;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.NoSuchElementException;
 
 /**
  * The Join operator implements the relational join operation.
@@ -9,41 +10,42 @@ public class Join extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    private JoinPredicate joinPredicate;
+    private OpIterator opIterator1, opIterator2;
+    private ArrayList<OpIterator> children = new ArrayList<>();
+
     /**
      * Constructor. Accepts two children to join and the predicate to join them
      * on
-     * 
-     * @param p
-     *            The predicate to use to join the children
-     * @param child1
-     *            Iterator for the left(outer) relation to join
-     * @param child2
-     *            Iterator for the right(inner) relation to join
+     *
+     * @param p      The predicate to use to join the children
+     * @param child1 Iterator for the left(outer) relation to join
+     * @param child2 Iterator for the right(inner) relation to join
      */
-    public Join(JoinPredicate p, OpIterator child1, OpIterator child2) {
-        // some code goes here
+    public Join(final JoinPredicate p, final OpIterator child1, final OpIterator child2) {
+        joinPredicate = p;
+        opIterator1 = child1;
+        opIterator2 = child2;
+        children.add(child1);
+        children.add(child2);
     }
 
     public JoinPredicate getJoinPredicate() {
-        // some code goes here
-        return null;
+        return joinPredicate;
     }
 
     /**
-     * @return
-     *       the field name of join field1. Should be quantified by
-     *       alias or table name.
-     * */
+     * @return the field name of join field1. Should be quantified by
+     * alias or table name.
+     */
     public String getJoinField1Name() {
-        // some code goes here
         return null;
     }
 
     /**
-     * @return
-     *       the field name of join field2. Should be quantified by
-     *       alias or table name.
-     * */
+     * @return the field name of join field2. Should be quantified by
+     * alias or table name.
+     */
     public String getJoinField2Name() {
         // some code goes here
         return null;
@@ -51,10 +53,9 @@ public class Join extends Operator {
 
     /**
      * @see simpledb.TupleDesc#merge(TupleDesc, TupleDesc) for possible
-     *      implementation logic.
+     * implementation logic.
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
         return null;
     }
 
@@ -85,7 +86,7 @@ public class Join extends Operator {
      * <p>
      * For example, if one tuple is {1,2,3} and the other tuple is {1,5,6},
      * joined on equality of the first column, then this returns {1,2,3,1,5,6}.
-     * 
+     *
      * @return The next matching tuple.
      * @see JoinPredicate#filter
      */

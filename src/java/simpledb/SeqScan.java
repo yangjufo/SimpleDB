@@ -12,10 +12,9 @@ public class SeqScan implements OpIterator {
 
     private static final long serialVersionUID = 1L;
 
-    private TransactionId tid;
-    private int tableid;
+    private int tableId;
     private String tableAlias;
-    private DbFileIterator dbFileIterator;
+    private final DbFileIterator dbFileIterator;
 
     /**
      * Creates a sequential scan over the specified table as a part of the
@@ -30,9 +29,8 @@ public class SeqScan implements OpIterator {
      *                   are, but the resulting name can be null.fieldName,
      *                   tableAlias.null, or null.null).
      */
-    public SeqScan(TransactionId tid, int tableid, String tableAlias) {
-        this.tid = tid;
-        this.tableid = tableid;
+    public SeqScan(final TransactionId tid, final int tableid, final String tableAlias) {
+        tableId = tableid;
         this.tableAlias = tableAlias;
         dbFileIterator = Database.getCatalog().getDatabaseFile(tableid).iterator(tid);
     }
@@ -42,7 +40,7 @@ public class SeqScan implements OpIterator {
      * be the actual name of the table in the catalog of the database
      */
     public String getTableName() {
-        return Database.getCatalog().getTableName(tableid);
+        return Database.getCatalog().getTableName(tableId);
     }
 
     /**
@@ -63,12 +61,12 @@ public class SeqScan implements OpIterator {
      *                   are, but the resulting name can be null.fieldName,
      *                   tableAlias.null, or null.null).
      */
-    public void reset(int tableid, String tableAlias) {
-        this.tableid = tableid;
+    public void reset(final int tableid, final String tableAlias) {
+        tableId = tableid;
         this.tableAlias = tableAlias;
     }
 
-    public SeqScan(TransactionId tid, int tableId) {
+    public SeqScan(final TransactionId tid, final int tableId) {
         this(tid, tableId, Database.getCatalog().getTableName(tableId));
     }
 
@@ -87,9 +85,9 @@ public class SeqScan implements OpIterator {
      * prefixed with the tableAlias string from the constructor.
      */
     public TupleDesc getTupleDesc() {
-        TupleDesc td = Database.getCatalog().getTupleDesc(tableid);
-        Type[] typeAr = IntStream.range(0, td.numFields()).mapToObj(td::getFieldType).toArray(Type[]::new);
-        String[] fieldAr = IntStream.range(0, td.numFields()).mapToObj(i -> tableAlias + "." + td.getFieldName(i)).toArray(String[]::new);
+        final TupleDesc td = Database.getCatalog().getTupleDesc(tableId);
+        final Type[] typeAr = IntStream.range(0, td.numFields()).mapToObj(td::getFieldType).toArray(Type[]::new);
+        final String[] fieldAr = IntStream.range(0, td.numFields()).mapToObj(i -> tableAlias + "." + td.getFieldName(i)).toArray(String[]::new);
         return new TupleDesc(typeAr, fieldAr);
     }
 

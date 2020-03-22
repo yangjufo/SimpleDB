@@ -14,9 +14,9 @@ import java.util.*;
  */
 public class Catalog {
 
-    private final Map<String, DbFile> tableNameMap = new HashMap<>();
-    private final Map<String, String> tablePkeysMap = new HashMap<>();
-    private final Map<Integer, String> tableIdNameMap = new HashMap<>();
+    private final Map<String, DbFile> nameFileMap = new HashMap<>();
+    private final Map<Integer, String> idNameMap = new HashMap<>();
+    private final Map<Integer, String> idPrimaryKeyMap = new HashMap<>();
 
     /**
      * Constructor.
@@ -36,9 +36,10 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(final DbFile file, final String name, final String pkeyField) {
-        tableNameMap.put(name, file);
-        tableIdNameMap.put(file.getId(), name);
-        tablePkeysMap.put(name, pkeyField);
+        final int id = file.getId();
+        nameFileMap.put(name, file);
+        idNameMap.put(id, name);
+        idPrimaryKeyMap.put(id, pkeyField);
     }
 
     public void addTable(final DbFile file, final String name) {
@@ -63,10 +64,10 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(final String name) throws NoSuchElementException {
-        if (!tableNameMap.containsKey(name)) {
+        if (!nameFileMap.containsKey(name)) {
             throw new NoSuchElementException();
         }
-        return tableNameMap.get(name).getId();
+        return nameFileMap.get(name).getId();
     }
 
     /**
@@ -77,10 +78,10 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(final int tableid) throws NoSuchElementException {
-        if (!tableIdNameMap.containsKey(tableid)) {
+        if (!idNameMap.containsKey(tableid)) {
             throw new NoSuchElementException();
         }
-        return tableNameMap.get(tableIdNameMap.get(tableid)).getTupleDesc();
+        return nameFileMap.get(idNameMap.get(tableid)).getTupleDesc();
     }
 
     /**
@@ -91,37 +92,37 @@ public class Catalog {
      *                function passed to addTable
      */
     public DbFile getDatabaseFile(final int tableid) throws NoSuchElementException {
-        if (!tableIdNameMap.containsKey(tableid)) {
+        if (!idNameMap.containsKey(tableid)) {
             throw new NoSuchElementException();
         }
-        return tableNameMap.get(tableIdNameMap.get(tableid));
+        return nameFileMap.get(idNameMap.get(tableid));
     }
 
     public String getPrimaryKey(final int tableid) {
-        if (!tableIdNameMap.containsKey(tableid)) {
+        if (!idPrimaryKeyMap.containsKey(tableid)) {
             throw new NoSuchElementException();
         }
-        return tablePkeysMap.get(tableIdNameMap.get(tableid));
+        return idPrimaryKeyMap.get(tableid);
     }
 
     public Iterator<Integer> tableIdIterator() {
-        return tableIdNameMap.keySet().iterator();
+        return idNameMap.keySet().iterator();
     }
 
     public String getTableName(final int id) {
-        if (!tableIdNameMap.containsKey(id)) {
+        if (!idNameMap.containsKey(id)) {
             throw new NoSuchElementException();
         }
-        return tableIdNameMap.get(id);
+        return idNameMap.get(id);
     }
 
     /**
      * Delete all tables from the catalog
      */
     public void clear() {
-        tableNameMap.clear();
-        tableIdNameMap.clear();
-        tablePkeysMap.clear();
+        nameFileMap.clear();
+        idNameMap.clear();
+        idPrimaryKeyMap.clear();
     }
 
     /**
@@ -164,17 +165,17 @@ public class Catalog {
                         }
                     }
                 }
-                Type[] typeAr = types.toArray(new Type[0]);
-                String[] namesAr = names.toArray(new String[0]);
-                TupleDesc t = new TupleDesc(typeAr, namesAr);
-                HeapFile tabHf = new HeapFile(new File(baseFolder + "/" + name + ".dat"), t);
+                final Type[] typeAr = types.toArray(new Type[0]);
+                final String[] namesAr = names.toArray(new String[0]);
+                final TupleDesc t = new TupleDesc(typeAr, namesAr);
+                final HeapFile tabHf = new HeapFile(new File(baseFolder + "/" + name + ".dat"), t);
                 addTable(tabHf, name, primaryKey);
                 System.out.println("Added table : " + name + " with schema " + t);
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
             System.exit(0);
-        } catch (IndexOutOfBoundsException e) {
+        } catch (final IndexOutOfBoundsException e) {
             System.out.println("Invalid catalog entry : " + line);
             System.exit(0);
         }

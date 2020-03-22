@@ -10,8 +10,9 @@ public class JoinPredicate implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private int field1, field2;
-    private Predicate.Op op;
+    private final int field1;
+    private final int field2;
+    private final Predicate.Op op;
 
     /**
      * Constructor -- create a new predicate over two fields of two tuples.
@@ -24,7 +25,7 @@ public class JoinPredicate implements Serializable {
      *               Predicate.Op.LESS_THAN_OR_EQ
      * @see Predicate
      */
-    public JoinPredicate(int field1, Predicate.Op op, int field2) {
+    public JoinPredicate(final int field1, final Predicate.Op op, final int field2) {
         this.field1 = field1;
         this.field2 = field2;
         this.op = op;
@@ -36,7 +37,7 @@ public class JoinPredicate implements Serializable {
      *
      * @return true if the tuples satisfy the predicate.
      */
-    public boolean filter(Tuple t1, Tuple t2) {
+    public boolean filter(final Tuple t1, final Tuple t2) {
         return t1.getField(field1).compare(op, t2.getField(field2));
     }
 

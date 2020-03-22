@@ -1,6 +1,7 @@
 package simpledb;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -10,11 +11,11 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * Provides a set of methods that can be used to access these variables from
  * anywhere.
- * 
+ *
  * @Threadsafe
  */
-public class Database {
-    private static AtomicReference<Database> _instance = new AtomicReference<>(new Database());
+public final class Database {
+    private static final AtomicReference<Database> _instance = new AtomicReference<>(new Database());
     private final Catalog _catalog;
     private final BufferPool _bufferpool;
 
@@ -35,17 +36,23 @@ public class Database {
         // startControllerThread();
     }
 
-    /** Return the log file of the static Database instance */
+    /**
+     * Return the log file of the static Database instance
+     */
     public static LogFile getLogFile() {
         return _instance.get()._logfile;
     }
 
-    /** Return the buffer pool of the static Database instance */
+    /**
+     * Return the buffer pool of the static Database instance
+     */
     public static BufferPool getBufferPool() {
         return _instance.get()._bufferpool;
     }
 
-    /** Return the catalog of the static Database instance */
+    /**
+     * Return the catalog of the static Database instance
+     */
     public static Catalog getCatalog() {
         return _instance.get()._catalog;
     }
@@ -54,19 +61,13 @@ public class Database {
      * Method used for testing -- create a new instance of the buffer pool and
      * return it
      */
-    public static BufferPool resetBufferPool(int pages) {
-        java.lang.reflect.Field bufferPoolF=null;
+    public static BufferPool resetBufferPool(final int pages) {
+        final java.lang.reflect.Field bufferPoolF;
         try {
             bufferPoolF = Database.class.getDeclaredField("_bufferpool");
             bufferPoolF.setAccessible(true);
             bufferPoolF.set(_instance.get(), new BufferPool(pages));
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalArgumentException | SecurityException | IllegalAccessException e) {
             e.printStackTrace();
         }
 //        _instance._bufferpool = new BufferPool(pages);
