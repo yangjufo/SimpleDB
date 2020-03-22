@@ -16,6 +16,7 @@ public class IntegerAggregator implements Aggregator {
     private final TupleDesc aggregatedTupleDesc;
     private final Map<Field, Tuple> aggregatedTuples = new HashMap<>();
     private final Map<Field, Integer> aggregatedCounts = new HashMap<>();
+    private final Map<Field, Integer> aggregatedSums = new HashMap<>();
 
     /**
      * Aggregate constructor
@@ -52,6 +53,7 @@ public class IntegerAggregator implements Aggregator {
         IntField aggregatedValue = (IntField) (groupByField == NO_GROUPING ? mergedTuple.getField(0) : mergedTuple.getField(1));
         final IntField newValue = (IntField) tup.getField(aggregateField);
         final int currCount = aggregatedCounts.getOrDefault(groupByField == NO_GROUPING ? null : tup.getField(groupByField), 0);
+        final int currSum = aggregatedSums.getOrDefault(groupByField == NO_GROUPING ? null : tup.getField(groupByField), 0);
         switch (aggregateOperator) {
             case MIN:
                 aggregatedValue = aggregatedValue == null ? newValue : aggregatedValue.compare(Predicate.Op.LESS_THAN, newValue) ? aggregatedValue : newValue;
@@ -61,11 +63,10 @@ public class IntegerAggregator implements Aggregator {
                         newValue) ? aggregatedValue : newValue;
                 break;
             case AVG:
-                aggregatedValue = aggregatedValue == null ? newValue : new IntField(
-                        (aggregatedValue.getValue() * currCount + newValue.getValue()) / (currCount + 1));
+                aggregatedValue = new IntField((currSum + newValue.getValue()) / (currCount + 1));
                 break;
             case SUM:
-                aggregatedValue = aggregatedValue == null ? newValue : new IntField(aggregatedValue.getValue() + newValue.getValue());
+                aggregatedValue = new IntField(currSum + newValue.getValue());
                 break;
             case COUNT:
                 aggregatedValue = new IntField(currCount + 1);
@@ -80,6 +81,7 @@ public class IntegerAggregator implements Aggregator {
         }
         aggregatedTuples.put(groupByField == NO_GROUPING ? null : tup.getField(groupByField), mergedTuple);
         aggregatedCounts.put(groupByField == NO_GROUPING ? null : tup.getField(groupByField), currCount + 1);
+        aggregatedSums.put(groupByField == NO_GROUPING ? null : tup.getField(groupByField), currSum + newValue.getValue());
     }
 
     /**
