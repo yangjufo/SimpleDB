@@ -98,8 +98,8 @@ public class Aggregate extends Operator {
                 aggregator.mergeTupleIntoGroup(opIterator.next());
             }
             opIterator.close();
+            aggregatorIterator = aggregator.iterator();
         }
-        aggregatorIterator = aggregator.iterator();
         aggregatorIterator.open();
     }
 
@@ -144,7 +144,7 @@ public class Aggregate extends Operator {
 
     public void close() {
         super.close();
-        aggregatorIterator = null;
+        aggregatorIterator.close();
     }
 
     @Override

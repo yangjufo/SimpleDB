@@ -166,20 +166,24 @@ public class TupleDesc implements Serializable {
      * @return true if the object is equal to this TupleDesc.
      */
 
+    @Override
     public boolean equals(final Object o) {
-        if (o instanceof TupleDesc) {
-            final TupleDesc otherTD = ((TupleDesc) o);
-            if (numFields() != otherTD.numFields() || getSize() != otherTD.getSize()) {
-                return false;
-            }
-            for (int i = 0; i < numFields(); i++) {
-                if (!getFieldType(i).equals(otherTD.getFieldType(i))) {
-                    return false;
-                }
-            }
+        if (this == o) {
             return true;
         }
-        return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final TupleDesc tupleDesc = (TupleDesc) o;
+        if (numFields() != tupleDesc.numFields() || getSize() != tupleDesc.getSize()) {
+            return false;
+        }
+        for (int i = 0; i < numFields(); i++) {
+            if (!getFieldType(i).equals(tupleDesc.getFieldType(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public int hashCode() {

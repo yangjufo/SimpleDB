@@ -70,7 +70,7 @@ public class StringField implements Field {
 	 * Compare the specified field to the value of this Field. Return semantics
 	 * are as specified by Field.compare
 	 * 
-	 * @throws IllegalCastException
+	 * @throws IllegalArgumentException
 	 *             if val is not a StringField
 	 * @see Field#compare
 	 */
@@ -99,7 +99,7 @@ public class StringField implements Field {
 			return cmpVal <= 0;
 
 		case LIKE:
-			return value.indexOf(iVal.value) >= 0;
+			return value.contains(iVal.value);
 		}
 
 		return false;

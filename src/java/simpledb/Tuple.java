@@ -96,4 +96,24 @@ public class Tuple implements Serializable {
     public void resetTupleDesc(final TupleDesc td) {
         this.tupleDesc = td;
     }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final Tuple tuple = (Tuple) o;
+        if (!tupleDesc.equals(tuple.tupleDesc) || !recordId.equals(tuple.recordId)) {
+            return false;
+        }
+        for (int i = 0; i < tupleDesc.numFields(); i++) {
+            if (!fields.get(i).equals(tuple.getField(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

@@ -12,9 +12,9 @@ public class Join extends Operator {
     private final JoinPredicate joinPredicate;
     private final OpIterator opIterator1;
     private final OpIterator opIterator2;
-    private ArrayList<OpIterator> children = new ArrayList<>();
-    private boolean tuple2Done;
-    private Tuple tuple1;
+    private List<OpIterator> children = new ArrayList<>();
+    private List<Tuple> joinedTuples = null;
+    private TupleIterator joinedTuplesIterator = null;
 
     /**
      * Constructor. Accepts two children to join and the predicate to join them
@@ -63,16 +63,42 @@ public class Join extends Operator {
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         super.open();
-        opIterator1.open();
-        opIterator2.open();
-        tuple2Done = true;
-        tuple1 = null;
+        if (joinedTuples == null) {
+            opIterator1.open();
+            opIterator2.open();
+            joinedTuples = new ArrayList<>();
+            while (opIterator1.hasNext()) {
+                final Tuple tuple1 = opIterator1.next();
+                while (opIterator2.hasNext()) {
+                    final Tuple tuple2 = opIterator2.next();
+                    if (joinPredicate.filter(tuple1, tuple2)) {
+                        final Tuple mergedTuple = new Tuple(getTupleDesc());
+                        int index = 0;
+                        final Iterator<Field> fields1 = tuple1.fields();
+                        while (fields1.hasNext()) {
+                            mergedTuple.setField(index, fields1.next());
+                            index += 1;
+                        }
+                        final Iterator<Field> fields2 = tuple2.fields();
+                        while (fields2.hasNext()) {
+                            mergedTuple.setField(index, fields2.next());
+                            index += 1;
+                        }
+                        joinedTuples.add(mergedTuple);
+                    }
+                }
+                opIterator2.rewind();
+            }
+            opIterator1.close();
+            opIterator2.close();
+            joinedTuplesIterator = new TupleIterator(getTupleDesc(), joinedTuples);
+        }
+        joinedTuplesIterator.open();
     }
 
     public void close() {
         super.close();
-        opIterator1.close();
-        opIterator2.close();
+        joinedTuplesIterator.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
@@ -99,33 +125,11 @@ public class Join extends Operator {
      * @see JoinPredicate#filter
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        final Tuple mergedTuple = new Tuple(getTupleDesc());
-        while (opIterator1.hasNext() || !tuple2Done) {
-            if (tuple2Done) {
-                tuple1 = opIterator1.next();
-            }
-            tuple2Done = false;
-            while (opIterator2.hasNext()) {
-                final Tuple tuple2 = opIterator2.next();
-                if (joinPredicate.filter(tuple1, tuple2)) {
-                    int index = 0;
-                    final Iterator<Field> fields1 = tuple1.fields();
-                    while (fields1.hasNext()) {
-                        mergedTuple.setField(index, fields1.next());
-                        index += 1;
-                    }
-                    final Iterator<Field> fields2 = tuple2.fields();
-                    while (fields2.hasNext()) {
-                        mergedTuple.setField(index, fields2.next());
-                        index += 1;
-                    }
-                    return mergedTuple;
-                }
-            }
-            tuple2Done = true;
-            opIterator2.rewind();
+        if (joinedTuplesIterator.hasNext()) {
+            return joinedTuplesIterator.next();
+        } else {
+            return null;
         }
-        return null;
     }
 
     @Override

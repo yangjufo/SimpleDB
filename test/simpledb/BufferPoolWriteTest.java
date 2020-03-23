@@ -1,18 +1,13 @@
 package simpledb;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import junit.framework.JUnit4TestAdapter;
+import org.junit.*;
+import simpledb.systemtest.SystemTestUtil;
+
+import java.io.*;
 import java.util.ArrayList;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import simpledb.systemtest.SystemTestUtil;
-import static org.junit.Assert.*;
-import junit.framework.JUnit4TestAdapter;
+import static org.junit.Assert.assertEquals;
 
 public class BufferPoolWriteTest extends TestUtil.CreateHeapFile {
     private TransactionId tid;
@@ -91,7 +86,7 @@ public class BufferPoolWriteTest extends TestUtil.CreateHeapFile {
     	DbFileIterator it = hf.iterator(tid); 
     	it.open();
     	
-    	ArrayList<Tuple> tuples = new ArrayList<Tuple>();
+    	ArrayList<Tuple> tuples = new ArrayList<>();
     	while(it.hasNext()) {
     		tuples.add(it.next());
     	}

@@ -1,8 +1,7 @@
 package simpledb;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -23,8 +22,8 @@ public class BufferPool {
 
     private static int pageSize = DEFAULT_PAGE_SIZE;
 
-    private int numPages;
-    private Map<Integer, Page> pageIdMap = new HashMap<>();
+    private final int numPages;
+    private final Map<Integer, Page> pageIdMap = new HashMap<>();
 
     /**
      * Default number of pages passed to the constructor. This is used by
@@ -38,7 +37,7 @@ public class BufferPool {
      *
      * @param numPages maximum number of pages in this buffer pool.
      */
-    public BufferPool(int numPages) {
+    public BufferPool(final int numPages) {
         this.numPages = numPages;
     }
 
@@ -47,7 +46,7 @@ public class BufferPool {
     }
 
     // THIS FUNCTION SHOULD ONLY BE USED FOR TESTING!!
-    public static void setPageSize(int pageSize) {
+    public static void setPageSize(final int pageSize) {
         BufferPool.pageSize = pageSize;
     }
 
@@ -71,16 +70,15 @@ public class BufferPool {
      * @param pid  the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public Page getPage(TransactionId tid, PageId pid, Permissions perm) throws TransactionAbortedException, DbException {
-        if (pageIdMap.size() == numPages) {
-            throw new DbException("No free pages");
-        }
-        int pidKey = pid.hashCode();
+    public Page getPage(final TransactionId tid, final PageId pid, final Permissions perm) throws TransactionAbortedException, DbException {
+        final int pidKey = pid.hashCode();
         if (!pageIdMap.containsKey(pidKey)) {
+            if (pageIdMap.size() == numPages) {
+                throw new DbException("No free pages");
+            }
             pageIdMap.put(pidKey, Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
         }
         return pageIdMap.get(pidKey);
-
     }
 
     /**
@@ -92,7 +90,7 @@ public class BufferPool {
      * @param tid the ID of the transaction requesting the unlock
      * @param pid the ID of the page to unlock
      */
-    public void releasePage(TransactionId tid, PageId pid) {
+    public void releasePage(final TransactionId tid, final PageId pid) {
         // some code goes here
         // not necessary for lab1|lab2
     }
@@ -102,7 +100,7 @@ public class BufferPool {
      *
      * @param tid the ID of the transaction requesting the unlock
      */
-    public void transactionComplete(TransactionId tid) throws IOException {
+    public void transactionComplete(final TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
     }
@@ -110,7 +108,7 @@ public class BufferPool {
     /**
      * Return true if the specified transaction has a lock on the specified page
      */
-    public boolean holdsLock(TransactionId tid, PageId p) {
+    public boolean holdsLock(final TransactionId tid, final PageId p) {
         // some code goes here
         // not necessary for lab1|lab2
         return false;
@@ -123,7 +121,7 @@ public class BufferPool {
      * @param tid    the ID of the transaction requesting the unlock
      * @param commit a flag indicating whether we should commit or abort
      */
-    public void transactionComplete(TransactionId tid, boolean commit)
+    public void transactionComplete(final TransactionId tid, final boolean commit)
             throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
@@ -144,10 +142,13 @@ public class BufferPool {
      * @param tableId the table to add the tuple to
      * @param t       the tuple to add
      */
-    public void insertTuple(TransactionId tid, int tableId, Tuple t)
+    public void insertTuple(final TransactionId tid, final int tableId, final Tuple t)
             throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
+        final ArrayList<Page> modifiedPages = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
+        for (Page page : modifiedPages) {
+            page.markDirty(true, tid);
+            pageIdMap.put(page.getId().hashCode(), page);
+        }
     }
 
     /**
@@ -163,10 +164,14 @@ public class BufferPool {
      * @param tid the transaction deleting the tuple.
      * @param t   the tuple to delete
      */
-    public void deleteTuple(TransactionId tid, Tuple t)
+    public void deleteTuple(final TransactionId tid, final Tuple t)
             throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
+        final ArrayList<Page> modifiedPages = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId()).deleteTuple(tid, t);
+        modifiedPages.forEach(page -> page.markDirty(true, tid));
+        for (Page page : modifiedPages) {
+            page.markDirty(true, tid);
+            pageIdMap.put(page.getId().hashCode(), page);
+        }
     }
 
     /**
