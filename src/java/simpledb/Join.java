@@ -127,9 +127,8 @@ public class Join extends Operator {
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         if (joinedTuplesIterator.hasNext()) {
             return joinedTuplesIterator.next();
-        } else {
-            return null;
         }
+        return null;
     }
 
     @Override

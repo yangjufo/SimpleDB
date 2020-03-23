@@ -113,9 +113,8 @@ public class Aggregate extends Operator {
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         if (aggregatorIterator.hasNext()) {
             return aggregatorIterator.next();
-        } else {
-            return null;
         }
+        return null;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
