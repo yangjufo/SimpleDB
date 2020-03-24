@@ -23,7 +23,13 @@ public class BufferPool {
     private static int pageSize = DEFAULT_PAGE_SIZE;
 
     private final int numPages;
-    private final Map<Integer, Page> pageIdMap = new HashMap<>();
+    private final Queue<Integer> countQueue = new LinkedList<>();
+    private final Map<Integer, Integer> countIdMap = new HashMap<>();
+    private final Map<Integer, Integer> idCountMap = new HashMap<>();
+    private final Map<Integer, Page> idPageMap = new HashMap<>();
+    private final Map<Integer, Page> discardedIdPageMap = new HashMap<>();
+    private TransactionId transactionId = null;
+    private int pageCount = 0;
 
     /**
      * Default number of pages passed to the constructor. This is used by
@@ -71,14 +77,24 @@ public class BufferPool {
      * @param perm the requested permissions on the page
      */
     public Page getPage(final TransactionId tid, final PageId pid, final Permissions perm) throws TransactionAbortedException, DbException {
+        transactionId = tid;
+        pageCount += 1;
         final int pidKey = pid.hashCode();
-        if (!pageIdMap.containsKey(pidKey)) {
-            if (pageIdMap.size() == numPages) {
-                throw new DbException("No free pages");
+        if (!idPageMap.containsKey(pidKey)) {
+            while (idPageMap.size() == numPages) {
+                evictPage();
             }
-            pageIdMap.put(pidKey, Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
+            idPageMap.put(pidKey, Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
         }
-        return pageIdMap.get(pidKey);
+        if (idCountMap.containsKey(pidKey)) {
+            final int oldcount = idCountMap.get(pidKey);
+            countQueue.remove(oldcount);
+            countIdMap.remove(oldcount);
+        }
+        idCountMap.put(pidKey, pageCount);
+        countIdMap.put(pageCount, pidKey);
+        countQueue.add(pageCount);
+        return idPageMap.get(pidKey);
     }
 
     /**
@@ -147,7 +163,7 @@ public class BufferPool {
         final ArrayList<Page> modifiedPages = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
         for (Page page : modifiedPages) {
             page.markDirty(true, tid);
-            pageIdMap.put(page.getId().hashCode(), page);
+            idPageMap.put(page.getId().hashCode(), page);
         }
     }
 
@@ -170,7 +186,7 @@ public class BufferPool {
         modifiedPages.forEach(page -> page.markDirty(true, tid));
         for (Page page : modifiedPages) {
             page.markDirty(true, tid);
-            pageIdMap.put(page.getId().hashCode(), page);
+            idPageMap.put(page.getId().hashCode(), page);
         }
     }
 
@@ -180,9 +196,12 @@ public class BufferPool {
      * break simpledb if running in NO STEAL mode.
      */
     public synchronized void flushAllPages() throws IOException {
-        // some code goes here
-        // not necessary for lab1
-
+        for (Page page : discardedIdPageMap.values()) {
+            flushPage(page.getId());
+        }
+        for (Page page : idPageMap.values()) {
+            flushPage(page.getId());
+        }
     }
 
     /**
@@ -194,9 +213,8 @@ public class BufferPool {
      * Also used by B+ tree files to ensure that deleted pages
      * are removed from the cache so they can be reused safely
      */
-    public synchronized void discardPage(PageId pid) {
-        // some code goes here
-        // not necessary for lab1
+    public synchronized void discardPage(final PageId pid) {
+        discardedIdPageMap.put(pid.hashCode(), idPageMap.remove(pid.hashCode()));
     }
 
     /**
@@ -204,15 +222,15 @@ public class BufferPool {
      *
      * @param pid an ID indicating the page to flush
      */
-    private synchronized void flushPage(PageId pid) throws IOException {
-        // some code goes here
-        // not necessary for lab1
+    private synchronized void flushPage(final PageId pid) throws IOException {
+        final Page page = idPageMap.getOrDefault(pid.hashCode(), discardedIdPageMap.get(pid.hashCode()));
+        Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(page);
     }
 
     /**
      * Write all pages of the specified transaction to disk.
      */
-    public synchronized void flushPages(TransactionId tid) throws IOException {
+    public synchronized void flushPages(final TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
     }
@@ -222,8 +240,21 @@ public class BufferPool {
      * Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized void evictPage() throws DbException {
-        // some code goes here
-        // not necessary for lab1
+        if (countQueue.isEmpty()) {
+            throw new DbException("No page to evict!");
+        }
+        final int count = countQueue.poll();
+        final int pid = countIdMap.remove(count);
+        final Page page = idPageMap.get(pid);
+        idCountMap.remove(pid);
+        idPageMap.remove(pid);
+        try {
+            if (page.isDirty() == transactionId) {
+                flushPage(page.getId());
+            }
+        } catch (Exception e) {
+            throw new DbException("Failed to flush page!");
+        }
     }
 
 }
