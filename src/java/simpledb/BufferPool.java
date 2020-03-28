@@ -249,7 +249,7 @@ public class BufferPool {
         idCountMap.remove(pid);
         idPageMap.remove(pid);
         try {
-            if (page.isDirty() == transactionId) {
+            if (page.isDirty() == transactionId && transactionId != null) {
                 flushPage(page.getId());
             }
         } catch (Exception e) {

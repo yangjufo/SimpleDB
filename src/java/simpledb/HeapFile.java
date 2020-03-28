@@ -95,7 +95,7 @@ public class HeapFile implements DbFile {
      */
     public int numPages() {
         final int currFilePages = (int) (file.length() / BufferPool.getPageSize());
-        numPages = currFilePages > numPages ? currFilePages : numPages;
+        numPages = Math.max(currFilePages, numPages);
         return numPages;
     }
 

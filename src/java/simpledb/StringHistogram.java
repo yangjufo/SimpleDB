@@ -16,7 +16,7 @@ public class StringHistogram {
      * @param buckets
      *            the number of buckets
      */
-    public StringHistogram(int buckets) {
+    public StringHistogram(final int buckets) {
         hist = new IntHistogram(buckets, minVal(), maxVal());
     }
 
@@ -24,12 +24,12 @@ public class StringHistogram {
      * Convert a string to an integer, with the property that if the return
      * value(s1) < return value(s2), then s1 < s2
      */
-    private int stringToInt(String s) {
+    private int stringToInt(final String s) {
         int i;
         int v = 0;
         for (i = 3; i >= 0; i--) {
             if (s.length() > 3 - i) {
-                int ci = (int) s.charAt(3 - i);
+                final int ci = s.charAt(3 - i);
                 v += (ci) << (i * 8);
             }
         }
@@ -60,8 +60,8 @@ public class StringHistogram {
     }
 
     /** Add a new value to thte histogram */
-    public void addValue(String s) {
-        int val = stringToInt(s);
+    public void addValue(final String s) {
+        final int val = stringToInt(s);
         hist.addValue(val);
     }
 
@@ -74,8 +74,8 @@ public class StringHistogram {
      * @param s
      *            The string to apply op to
      */
-    public double estimateSelectivity(Predicate.Op op, String s) {
-        int val = stringToInt(s);
+    public double estimateSelectivity(final Predicate.Op op, final String s) {
+        final int val = stringToInt(s);
         return hist.estimateSelectivity(op, val);
     }
 

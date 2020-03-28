@@ -62,20 +62,22 @@ public class IntHistogram {
         double lessSelectivity;
         final int pos;
         if (v < min) {
-            pos = 0;
+            equalSelectivity = lessSelectivity = 0;
+            greatSelectivity = tupleNumber;
         } else if (v > max) {
-            pos = bucketNum - 1;
+            equalSelectivity = greatSelectivity = 0;
+            lessSelectivity = tupleNumber;
         } else {
             pos = (v - min) / scalingFactor;
-        }
-        equalSelectivity = buckets[pos] * 1.0 / scalingFactor;
-        greatSelectivity = ((pos + 1) * scalingFactor + min - 1 - v) * 1.0 / scalingFactor;
-        for (int i = pos + 1; i < bucketNum; i++) {
-            greatSelectivity += buckets[i] * 1.0 / scalingFactor;
-        }
-        lessSelectivity = (v - pos * scalingFactor - min) * 1.0 / scalingFactor;
-        for (int i = 0; i < pos; i++) {
-            lessSelectivity += buckets[i] * 1.0 / scalingFactor;
+            equalSelectivity = buckets[pos] * 1.0 / scalingFactor;
+            greatSelectivity = ((pos + 1) * scalingFactor + min - 1 - v) * 1.0 / scalingFactor;
+            for (int i = pos + 1; i < bucketNum; i++) {
+                greatSelectivity += buckets[i] * 1.0 / scalingFactor;
+            }
+            lessSelectivity = (v - pos * scalingFactor - min) * 1.0 / scalingFactor;
+            for (int i = 0; i < pos; i++) {
+                lessSelectivity += buckets[i] * 1.0 / scalingFactor;
+            }
         }
         switch (op) {
             case EQUALS:
