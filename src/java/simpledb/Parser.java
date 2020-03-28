@@ -1,13 +1,11 @@
 package simpledb;
 
 import Zql.*;
+import jline.*;
+
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-
-import jline.ArgumentCompletor;
-import jline.ConsoleReader;
-import jline.SimpleCompletor;
 
 public class Parser {
     static boolean explain = false;
@@ -583,7 +581,7 @@ public class Parser {
             "group by", "max(", "min(", "avg(", "count", "rollback", "commit",
             "insert", "delete", "values", "into" };
 
-    public static void main(String argv[]) throws IOException {
+    public static void main(String argv[]) throws IOException, DbException, TransactionAbortedException {
 
         if (argv.length < 1 || argv.length > 4) {
             System.out.println("Invalid number of arguments.\n" + usage);
@@ -604,7 +602,7 @@ public class Parser {
 
     protected boolean interactive = true;
 
-    protected void start(String[] argv) throws IOException {
+    protected void start(String[] argv) throws IOException, DbException, TransactionAbortedException {
         // first add tables to database
         Database.getCatalog().loadSchema(argv[0]);
         TableStats.computeStatistics();

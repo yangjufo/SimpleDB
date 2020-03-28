@@ -38,7 +38,7 @@ public class TableStats {
         return statsMap;
     }
 
-    public static void computeStatistics() {
+    public static void computeStatistics() throws DbException, TransactionAbortedException {
         final Iterator<Integer> tableIt = Database.getCatalog().tableIdIterator();
 
         System.out.println("Computing table stats.");
@@ -72,7 +72,7 @@ public class TableStats {
      * @param ioCostPerPage The cost per page of IO. This doesn't differentiate between
      *                      sequential-scan IO and disk seeks.
      */
-    public TableStats(final int tableid, final int ioCostPerPage) {
+    public TableStats(final int tableid, final int ioCostPerPage) throws DbException, TransactionAbortedException {
         // For this function, you'll have to get the
         // DbFile for the table in question,
         // then scan through its tuples and calculate
@@ -91,45 +91,41 @@ public class TableStats {
         final Field[] maxs = new Field[numFields];
 
         final DbFileIterator fileIterator = file.iterator(null);
-        try {
-            fileIterator.open();
-            while (fileIterator.hasNext()) {
-                final Tuple tuple = fileIterator.next();
-                for (int i = 0; i < numFields; i++) {
-                    if (tupleDesc.getFieldType(i).equals(Type.INT_TYPE)) {
-                        if (mins[i] == null || tuple.getField(i).compare(Predicate.Op.LESS_THAN, mins[i])) {
-                            mins[i] = tuple.getField(i);
-                        }
-                        if (maxs[i] == null || tuple.getField(i).compare(Predicate.Op.GREATER_THAN, maxs[i])) {
-                            maxs[i] = tuple.getField(i);
-                        }
-                    }
-                }
-                numTuples += 1;
-            }
+        fileIterator.open();
+        while (fileIterator.hasNext()) {
+            final Tuple tuple = fileIterator.next();
             for (int i = 0; i < numFields; i++) {
                 if (tupleDesc.getFieldType(i).equals(Type.INT_TYPE)) {
-                    intHistograms.put(i, new IntHistogram(NUM_HIST_BINS, ((IntField) mins[i]).getValue(), ((IntField) maxs[i]).getValue()));
-                } else {
-                    stringHistograms.put(i, new StringHistogram(NUM_HIST_BINS));
-                }
-
-            }
-            fileIterator.rewind();
-            while (fileIterator.hasNext()) {
-                final Tuple tuple = fileIterator.next();
-                for (int i = 0; i < numFields; i++) {
-                    if (tupleDesc.getFieldType(i).equals(Type.INT_TYPE)) {
-                        intHistograms.get(i).addValue(((IntField) tuple.getField(i)).getValue());
-                    } else {
-                        stringHistograms.get(i).addValue(((StringField) tuple.getField(i)).getValue());
+                    if (mins[i] == null || tuple.getField(i).compare(Predicate.Op.LESS_THAN, mins[i])) {
+                        mins[i] = tuple.getField(i);
+                    }
+                    if (maxs[i] == null || tuple.getField(i).compare(Predicate.Op.GREATER_THAN, maxs[i])) {
+                        maxs[i] = tuple.getField(i);
                     }
                 }
             }
-            fileIterator.close();
-        } catch (DbException | TransactionAbortedException e) {
-            e.printStackTrace();
+            numTuples += 1;
         }
+        for (int i = 0; i < numFields; i++) {
+            if (tupleDesc.getFieldType(i).equals(Type.INT_TYPE)) {
+                intHistograms.put(i, new IntHistogram(NUM_HIST_BINS, ((IntField) mins[i]).getValue(), ((IntField) maxs[i]).getValue()));
+            } else {
+                stringHistograms.put(i, new StringHistogram(NUM_HIST_BINS));
+            }
+
+        }
+        fileIterator.rewind();
+        while (fileIterator.hasNext()) {
+            final Tuple tuple = fileIterator.next();
+            for (int i = 0; i < numFields; i++) {
+                if (tupleDesc.getFieldType(i).equals(Type.INT_TYPE)) {
+                    intHistograms.get(i).addValue(((IntField) tuple.getField(i)).getValue());
+                } else {
+                    stringHistograms.get(i).addValue(((StringField) tuple.getField(i)).getValue());
+                }
+            }
+        }
+        fileIterator.close();
     }
 
     /**
