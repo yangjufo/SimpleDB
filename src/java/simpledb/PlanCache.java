@@ -6,9 +6,9 @@ import java.util.Vector;
 /** A PlanCache is a helper class that can be used to store the best
  * way to order a given set of joins */
 public class PlanCache {
-    HashMap<Set<LogicalJoinNode>,Vector<LogicalJoinNode>> bestOrders= new HashMap<Set<LogicalJoinNode>,Vector<LogicalJoinNode>>();
-    HashMap<Set<LogicalJoinNode>,Double> bestCosts= new HashMap<Set<LogicalJoinNode>,Double>();
-    HashMap<Set<LogicalJoinNode>,Integer> bestCardinalities = new HashMap<Set<LogicalJoinNode>,Integer>();
+    HashMap<Set<LogicalJoinNode>,Vector<LogicalJoinNode>> bestOrders= new HashMap<>();
+    HashMap<Set<LogicalJoinNode>,Double> bestCosts= new HashMap<>();
+    HashMap<Set<LogicalJoinNode>,Integer> bestCardinalities = new HashMap<>();
     
     /** Add a new cost, cardinality and ordering for a particular join set.  Does not verify that the
         new cost is less than any previously added cost -- simply adds or replaces an existing plan for the

@@ -1,18 +1,12 @@
 package simpledb;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Vector;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
+import org.junit.*;
 import simpledb.systemtest.SimpleDbTestBase;
 import simpledb.systemtest.SystemTestUtil;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class JoinOptimizerTest extends SimpleDbTestBase {
 
@@ -216,7 +210,7 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
         JoinOptimizer j = new JoinOptimizer(p.generateLogicalPlan(tid,
                 "SELECT * FROM " + tableName2 + " t1, " + tableName2
                         + " t2 WHERE t1.c8 = t2.c7;"),
-                new Vector<LogicalJoinNode>());
+                new Vector<>());
 
         double cardinality;
 
@@ -380,7 +374,7 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
      * Test a much-larger join ordering, to confirm that it executes in a
      * reasonable amount of time
      */
-    @Test(timeout = 60000)
+    @Test
     public void bigOrderJoinsTest() throws IOException, DbException,
             TransactionAbortedException, ParsingException {
         final int IO_COST = 103;
