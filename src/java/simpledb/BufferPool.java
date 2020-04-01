@@ -2,6 +2,7 @@ package simpledb;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -19,6 +20,7 @@ public class BufferPool {
      * Bytes per page, including header.
      */
     private static final int DEFAULT_PAGE_SIZE = 4096;
+    private static final int TIMEOUT = 100; //seconds
 
     private static int pageSize = DEFAULT_PAGE_SIZE;
 
@@ -31,6 +33,7 @@ public class BufferPool {
     private final Map<Integer, TransactionId> pageTransacationELockMap = new HashMap<>();
     private final Map<Integer, Set<TransactionId>> pageTransactionSLockMap = new HashMap<>();
     private final Map<TransactionId, Set<PageId>> transactionPageLockMap = new HashMap<>();
+    private final Map<TransactionId, Long> transactionLockTimeMap = new HashMap<>();
     private int pageCount = 0;
 
     /**
@@ -99,16 +102,24 @@ public class BufferPool {
             synchronized (pageTransactionSLockMap) {
                 synchronized (pageTransacationELockMap) {
                     synchronized (transactionPageLockMap) {
-                        while (pageTransacationELockMap.containsKey(pidKey) && !pageTransacationELockMap.get(pidKey).equals(tid)) {
-                        }
-                        final Set<TransactionId> transactions = pageTransactionSLockMap.getOrDefault(pidKey, new HashSet<>());
-                        if (!transactions.contains(tid)) {
-                            transactions.add(tid);
-                            pageTransactionSLockMap.put(pidKey, transactions);
-                            if (!transactionPageLockMap.containsKey(tid)) {
-                                transactionPageLockMap.put(tid, new HashSet<>());
+                        synchronized (transactionLockTimeMap) {
+                            if (!transactionLockTimeMap.containsKey(tid)) {
+                                transactionLockTimeMap.put(tid, new Date().getTime());
                             }
-                            transactionPageLockMap.get(tid).add(pid);
+                            while (pageTransacationELockMap.containsKey(pidKey) && !pageTransacationELockMap.get(pidKey).equals(tid)) {
+                                if (TimeUnit.SECONDS.toSeconds((new Date().getTime()) - transactionLockTimeMap.get(tid)) > TIMEOUT) {
+                                    throw new TransactionAbortedException();
+                                }
+                            }
+                            final Set<TransactionId> transactions = pageTransactionSLockMap.getOrDefault(pidKey, new HashSet<>());
+                            if (!transactions.contains(tid)) {
+                                transactions.add(tid);
+                                pageTransactionSLockMap.put(pidKey, transactions);
+                                if (!transactionPageLockMap.containsKey(tid)) {
+                                    transactionPageLockMap.put(tid, new HashSet<>());
+                                }
+                                transactionPageLockMap.get(tid).add(pid);
+                            }
                         }
                     }
                 }
@@ -117,16 +128,24 @@ public class BufferPool {
             synchronized (pageTransactionSLockMap) {
                 synchronized (pageTransacationELockMap) {
                     synchronized (transactionPageLockMap) {
-                        while ((pageTransacationELockMap.containsKey(pidKey) && !pageTransacationELockMap.get(pidKey).equals(tid))
-                                || (pageTransactionSLockMap.containsKey(pidKey)
-                                && (pageTransactionSLockMap.get(pidKey).size() > 1
-                                || (pageTransactionSLockMap.size() == 1 && !pageTransactionSLockMap.get(pidKey).contains(tid))))) {
+                        synchronized (transactionLockTimeMap) {
+                            if (!transactionLockTimeMap.containsKey(tid)) {
+                                transactionLockTimeMap.put(tid, new Date().getTime());
+                            }
+                            while ((pageTransacationELockMap.containsKey(pidKey) && !pageTransacationELockMap.get(pidKey).equals(tid))
+                                    || (pageTransactionSLockMap.containsKey(pidKey)
+                                    && (pageTransactionSLockMap.get(pidKey).size() > 1
+                                    || (pageTransactionSLockMap.get(pidKey).size() == 1 && !pageTransactionSLockMap.get(pidKey).contains(tid))))) {
+                                if (TimeUnit.SECONDS.toSeconds((new Date().getTime()) - transactionLockTimeMap.get(tid)) > TIMEOUT) {
+                                    throw new TransactionAbortedException();
+                                }
+                            }
+                            pageTransacationELockMap.put(pidKey, tid);
+                            if (!transactionPageLockMap.containsKey(tid)) {
+                                transactionPageLockMap.put(tid, new HashSet<>());
+                            }
+                            transactionPageLockMap.get(tid).add(pid);
                         }
-                        pageTransacationELockMap.put(pidKey, tid);
-                        if (!transactionPageLockMap.containsKey(tid)) {
-                            transactionPageLockMap.put(tid, new HashSet<>());
-                        }
-                        transactionPageLockMap.get(tid).add(pid);
                     }
                 }
             }
@@ -151,6 +170,9 @@ public class BufferPool {
                     pageTransacationELockMap.remove(pidKey);
                     if (pageTransactionSLockMap.containsKey(pidKey)) {
                         pageTransactionSLockMap.get(pidKey).remove(tid);
+                        if (pageTransactionSLockMap.get(pidKey).isEmpty()) {
+                            pageTransactionSLockMap.remove(pidKey);
+                        }
                     }
                     if (transactionPageLockMap.containsKey(tid)) {
                         transactionPageLockMap.get(tid).remove(pid);
@@ -170,13 +192,9 @@ public class BufferPool {
             synchronized (pageTransacationELockMap) {
                 synchronized (transactionPageLockMap) {
                     if (transactionPageLockMap.containsKey(tid)) {
-                        for (PageId pid : transactionPageLockMap.get(tid)) {
-                            final int pidKey = pid.hashCode();
-                            pageTransacationELockMap.remove(pidKey);
-                            if (pageTransactionSLockMap.containsKey(pidKey)) {
-                                pageTransactionSLockMap.get(pidKey).remove(tid);
-                            }
-                        }
+                        final Set<PageId> pages = new HashSet<>(transactionPageLockMap.get(tid));
+                        pages.forEach(pid -> releasePage(tid, pid));
+                        transactionPageLockMap.remove(tid);
                     }
                 }
             }
@@ -187,7 +205,9 @@ public class BufferPool {
      * Return true if the specified transaction has a lock on the specified page
      */
     public boolean holdsLock(final TransactionId tid, final PageId p) {
-        return transactionPageLockMap.containsKey(tid) && transactionPageLockMap.get(tid).contains(p);
+        synchronized (transactionPageLockMap) {
+            return transactionPageLockMap.containsKey(tid) && transactionPageLockMap.get(tid).contains(p);
+        }
     }
 
     /**
@@ -199,10 +219,22 @@ public class BufferPool {
      */
     public void transactionComplete(final TransactionId tid, final boolean commit)
             throws IOException {
-        transactionComplete(tid);
         if (commit) {
-            flushAllPages();
+            flushPages(tid);
+        } else {
+            synchronized (transactionPageLockMap) {
+                synchronized (pageTransacationELockMap) {
+                    if (transactionPageLockMap.containsKey(tid)) {
+                        for (PageId pid : transactionPageLockMap.get(tid)) {
+                            if (pageTransacationELockMap.containsKey(pid.hashCode())) {
+                                discardPage(pid);
+                            }
+                        }
+                    }
+                }
+            }
         }
+        transactionComplete(tid);
     }
 
     /**
@@ -258,9 +290,6 @@ public class BufferPool {
      * break simpledb if running in NO STEAL mode.
      */
     public synchronized void flushAllPages() throws IOException {
-        for (Page page : discardedIdPageMap.values()) {
-            flushPage(page.getId());
-        }
         for (Page page : idPageMap.values()) {
             flushPage(page.getId());
         }
@@ -276,7 +305,13 @@ public class BufferPool {
      * are removed from the cache so they can be reused safely
      */
     public synchronized void discardPage(final PageId pid) {
-        discardedIdPageMap.put(pid.hashCode(), idPageMap.remove(pid.hashCode()));
+        final int pidKey = pid.hashCode();
+        if (idCountMap.containsKey(pidKey)) {
+            final int count = idCountMap.remove(pidKey);
+            countIdMap.remove(count);
+            countQueue.remove(count);
+        }
+        discardedIdPageMap.put(pidKey, idPageMap.remove(pidKey));
     }
 
     /**
@@ -285,16 +320,21 @@ public class BufferPool {
      * @param pid an ID indicating the page to flush
      */
     private synchronized void flushPage(final PageId pid) throws IOException {
-        final Page page = idPageMap.getOrDefault(pid.hashCode(), discardedIdPageMap.get(pid.hashCode()));
-        Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(page);
+        final int pidKey = pid.hashCode();
+        if (idPageMap.containsKey(pidKey)) {
+            final Page page = idPageMap.get(pidKey);
+            Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(page);
+        }
     }
 
     /**
      * Write all pages of the specified transaction to disk.
      */
     public synchronized void flushPages(final TransactionId tid) throws IOException {
-        for (PageId pid : transactionPageLockMap.get(tid)) {
-            flushPage(pid);
+        synchronized (transactionPageLockMap) {
+            for (PageId pid : transactionPageLockMap.get(tid)) {
+                flushPage(pid);
+            }
         }
     }
 
@@ -306,18 +346,24 @@ public class BufferPool {
         if (countQueue.isEmpty()) {
             throw new DbException("No page to evict!");
         }
-        final int count = countQueue.poll();
-        final int pid = countIdMap.remove(count);
-        final Page page = idPageMap.get(pid);
+        int count = countQueue.poll();
+        int pid = countIdMap.get(count);
+        Page page = idPageMap.get(pid);
+        int dirtyCount = 0;
+        while (page.isDirty() != null && dirtyCount != countIdMap.size()) {
+            dirtyCount += 1;
+            countQueue.add(count);
+            count = countQueue.poll();
+            pid = countIdMap.get(count);
+            page = idPageMap.get(pid);
+        }
+        if (dirtyCount == countIdMap.size()) {
+            countQueue.add(count);
+            throw new DbException("No non-dirty pages!");
+        }
         idCountMap.remove(pid);
         idPageMap.remove(pid);
-        try {
-            if (!page.isDirty().equals(pageTransacationELockMap.get(pid))) {
-                flushPage(page.getId());
-            }
-        } catch (Exception e) {
-            throw new DbException("Failed to flush page!");
-        }
+        countIdMap.remove(count);
     }
 
 }
